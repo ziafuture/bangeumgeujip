@@ -1,0 +1,19 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+.venv/
+.review-data/
+.review-data-demo/
+__pycache__/
+passed/build/
+
+# Not part of the contest submission: the earlier 0.2 probe, its PC review tool and test logs,
+# and the application forms (they carry contact details).
+.DS_Store
+app/
+review/
+artifacts/
+docs/

@@ -1,0 +1,33 @@
+apply plugin: 'com.android.application'
+
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+
+android {
+    namespace 'io.roadmoment.passed'
+    useLibrary 'android.car' // CarUxRestrictions; provided by the car OS at runtime
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'io.roadmoment.passed'
+        minSdk 28
+        targetSdk 34
+        versionCode 1
+        versionName '0.1.0'
+        // Empty key = built-in demo places only. Never commit a real key.
+        buildConfigField 'String', 'KAKAO_REST_KEY', "\"${localProps.getProperty('kakao.restKey', '')}\""
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests.returnDefaultValues = true }
+}
+dependencies {
+    implementation 'ai.pleos.playground:SpeechToText:3.3.1'
+    implementation 'ai.pleos.playground:TextToSpeech:3.3.1'
+    implementation 'ai.pleos.playground:FusedLocation:1.1.3'
+    implementation 'ai.pleos.playground:NaviHelper:3.0.5'
+    implementation 'ai.pleos.playground:Vehicle:2.3.2'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+}
