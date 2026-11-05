@@ -17,7 +17,7 @@
 
 APK: `passed/build/outputs/apk/debug/passed-debug.apk`
 
-장소 검색 키 없이 빌드하면 `[데모]` 가상 장소로 동작합니다. 카카오 로컬 API를 쓰려면 루트 `local.properties`에 `kakao.restKey=발급받은_키`를 넣습니다(커밋하지 않음).
+장소 검색 키 없이 빌드하면 `[데모]` 가상 장소로 동작합니다. 카카오 로컬 API를 쓰려면 루트 `local.properties`에 `kakao.restKey=발급받은_키`를 넣습니다(커밋하지 않음). Releases의 APK는 키 없이 빌드한 것이라 데모 장소로 동작하며, 시연 영상은 실제 카카오 데이터로 찍었습니다.
 
 ## 사용한 Pleos SDK
 
