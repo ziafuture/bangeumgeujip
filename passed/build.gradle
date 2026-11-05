@@ -16,7 +16,29 @@ android {
         versionCode 1
         versionName '0.1.0'
         // Empty key = built-in demo places only. Never commit a real key.
-        buildConfigField 'String', 'KAKAO_REST_KEY', "\"${localProps.getProperty('kakao.restKey', '')}\""
+        // -PkakaoKey= overrides local.properties, e.g. for a published APK that must not carry the key.
+        def kakaoKey = project.hasProperty('kakaoKey') ? project.property('kakaoKey') : localProps.getProperty('kakao.restKey', '')
+        buildConfigField 'String', 'KAKAO_REST_KEY', "\"${kakaoKey}\""
+    }
+    // Release signing: keystore path and passwords in local.properties (release.storeFile, release.storePassword,
+    // release.keyAlias, release.keyPassword). Without them the release build is signed with the debug key so the
+    // APK still installs; the debug build keeps its logcat tuning output, the release build does not.
+    signingConfigs {
+        release {
+            def store = localProps.getProperty('release.storeFile')
+            if (store) {
+                storeFile rootProject.file(store)
+                storePassword localProps.getProperty('release.storePassword')
+                keyAlias localProps.getProperty('release.keyAlias')
+                keyPassword localProps.getProperty('release.keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig localProps.getProperty('release.storeFile') ? signingConfigs.release : signingConfigs.debug
+            minifyEnabled false
+        }
     }
     buildFeatures { buildConfig true }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
