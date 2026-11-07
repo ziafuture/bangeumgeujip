@@ -158,7 +158,7 @@ public final class PassedService extends Service implements Dialog.Out {
 
     private void heard(String raw, long rawOnset, int voicedMs) { main.post(() -> {
         if (raw == null || raw.trim().isEmpty()) return;
-        if (BuildConfig.DEBUG) android.util.Log.d("BangeumHeard", raw + " (" + voicedMs + "ms)"); // tuning aid; release builds never log speech
+        if (BuildConfig.DEBUG) android.util.Log.d("BangeumHeard", raw + " (" + voicedMs + "ms, threshold " + Math.round(segmenter.thresholdDb()) + " dB, now " + Math.round(Status.db) + " dB)"); // tuning aid; release builds never log speech
         String text = raw; long onset = rawOnset;
         if (held != null && rawOnset - heldEnd < JOIN_GAP_MS) {
             text = held + " " + raw; onset = heldOnset;

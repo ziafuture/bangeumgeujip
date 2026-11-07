@@ -54,6 +54,14 @@ public class SegmenterTest {
         assertEquals(1, cuts.size());
     }
 
+    @Test public void endsWhenTheRoomSitsJustUnderTheThreshold() {
+        feed(-62, 30);   // floor learned in a quiet moment: threshold -50
+        feed(-40, 15);   // speech
+        feed(-53, 16);   // the usual level, under the threshold but above threshold - HOLD_DB
+        assertEquals(1, cuts.size());          // cut after 1.5 s, not at the 8 s cap
+        assertEquals(1500, (int)cuts.get(0));  // and the room tail is not counted as speech
+    }
+
     @Test public void thresholdStaysInBounds() {
         feed(-90, 50);
         assertEquals(Segmenter.MIN_THRESHOLD_DB, seg.thresholdDb(), 0.01);
