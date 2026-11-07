@@ -21,6 +21,9 @@ public final class Trail {
     }
 
     /** Fixes covering [from, to], including one fix on each side so the window can be interpolated. */
+    /** Forget every fix, e.g. when the demo drive replaces real positions. */
+    public synchronized void clear() { fixes.clear(); }
+
     public synchronized List<Fix> window(long from, long to) {
         List<Fix> out = new ArrayList<>(); Fix before = null;
         for (Fix f : fixes) {

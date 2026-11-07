@@ -43,7 +43,8 @@ public final class PassedService extends Service implements Dialog.Out {
     public static final String STOP = "io.roadmoment.passed.STOP", ARM = "io.roadmoment.passed.ARM",
             TEXT = "io.roadmoment.passed.TEXT", EXTRA_TEXT = "text", WAYPOINT = "io.roadmoment.passed.WAYPOINT", EXTRA_ID = "id",
             RESET_REACTION = "io.roadmoment.passed.RESET_REACTION",
-            DEST = "io.roadmoment.passed.DEST", PASSENGER = "io.roadmoment.passed.PASSENGER", ROUTE = "io.roadmoment.passed.ROUTE"; // debug stand-ins for the car
+            DEST = "io.roadmoment.passed.DEST", PASSENGER = "io.roadmoment.passed.PASSENGER", ROUTE = "io.roadmoment.passed.ROUTE", // debug stand-ins for the car
+            DEMO_DRIVE = "io.roadmoment.passed.DEMO_DRIVE"; // demo mode: drive the bundled route without a GPX file
     static final long MOVING_GRACE_MS = 180000; // short stops (lights, traffic) keep listening
     static final double MOVING_MPS = 2.0;
     private static final int NOTIFICATION = 21, ARRIVAL = 22;
@@ -123,6 +124,7 @@ public final class PassedService extends Service implements Dialog.Out {
         switch (intent.getAction()) {
             case ARM: segmenter.arm(now, 6); Status.speech = "말씀하세요 (6초)"; break;
             case TEXT: heard(intent.getStringExtra(EXTRA_TEXT), now, 0); break; // typed test input, same path as speech
+            case DEMO_DRIVE: if (Status.demoDriving) stopDemoDrive(); else startDemoDrive(); break;
             case DEST: {
                 String[] d = intent.getStringExtra(EXTRA_TEXT).split(",", 3);
                 destination(Double.parseDouble(d[0]), Double.parseDouble(d[1]), d.length > 2 ? d[2] : "");
@@ -394,16 +396,44 @@ public final class PassedService extends Service implements Dialog.Out {
                     Long ts = d.getTimestampMillis();
                     // Map the fix's wall-clock time onto the elapsed clock used for speech onsets.
                     long at = ts == null ? nowElapsed : nowElapsed - Math.max(0, System.currentTimeMillis() - ts);
-                    trail.add(d.getLatitude(), d.getLongitude(), at);
-                    Status.fixes++;
-                    double v = trail.speed(nowElapsed - 10000, nowElapsed);
-                    Status.speedMps = v;
-                    if (v >= MOVING_MPS) lastMovingAt = nowElapsed;
+                    if (!Status.demoDriving) fix(d.getLatitude(), d.getLongitude(), at, nowElapsed);
                 }
                 @Override public void onError(Exception e) { Status.service = "위치 오류: " + e.getMessage(); }
             });
             main.postDelayed(() -> { int n = 0; for (Saved.Item i : saved.all()) if (i.confirmed && n++ < 20) watch(i.id, i.name, i.lat, i.lon); }, 2000);
         } catch (Exception | LinkageError e) { Status.service = "위치 사용 불가: " + e.getClass().getSimpleName(); }
+    }
+
+    private void fix(double lat, double lon, long at, long nowElapsed) {
+        trail.add(lat, lon, at);
+        Status.fixes++;
+        double v = trail.speed(nowElapsed - 10000, nowElapsed);
+        Status.speedMps = v;
+        if (v >= MOVING_MPS) lastMovingAt = nowElapsed;
+    }
+
+    // Demo mode: the same straight eastbound run as passed/demo/demo-route.gpx (43 km/h, 96 s), fed to the trail
+    // in place of real fixes, so a reviewer can try the app on an emulator without loading a route file.
+    private static final double DEMO_LAT = 37.556, DEMO_LON = 126.922, DEMO_STEP_LON = 0.0001361;
+    private static final int DEMO_SECONDS = 96;
+    private int demoSecond;
+    private final Runnable demoTick = new Runnable() {
+        @Override public void run() {
+            if (!Status.demoDriving) return;
+            if (demoSecond > DEMO_SECONDS) { stopDemoDrive(); return; }
+            long now = SystemClock.elapsedRealtime();
+            fix(DEMO_LAT, DEMO_LON + DEMO_STEP_LON * demoSecond++, now, now);
+            main.postDelayed(this, 1000);
+        }
+    };
+
+    private void startDemoDrive() {
+        demoSecond = 0; Status.demoDriving = true; trail.clear(); // a jump from the real position would read as a huge speed
+        main.removeCallbacks(demoTick); main.post(demoTick);
+    }
+
+    private void stopDemoDrive() {
+        Status.demoDriving = false; main.removeCallbacks(demoTick);
     }
 
     private void watch(String id, String name, double lat, double lon) {
@@ -606,6 +636,7 @@ public final class PassedService extends Service implements Dialog.Out {
     }
 
     private void shutdown() {
+        stopDemoDrive();
         active = false; Status.running = false; Status.driving = false; Status.service = Status.service.contains("오류") ? Status.service : "중지됨";
         if (stt != null) stt.close();
         if (voice != null) voice.close();

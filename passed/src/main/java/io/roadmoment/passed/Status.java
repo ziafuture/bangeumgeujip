@@ -4,6 +4,7 @@ package io.roadmoment.passed;
 final class Status {
     static volatile boolean running, driving, micBlocked;
     static volatile boolean listenWhileParked; // demo/emulator: no movement, still listen
+    static volatile boolean demoDriving;       // demo mode: the service is driving the bundled route itself
     static volatile String service = "대기", speech = "", heard = "", lastSaid = "", source = "";
     static volatile double speedMps, db = -90;
     static volatile int fixes;

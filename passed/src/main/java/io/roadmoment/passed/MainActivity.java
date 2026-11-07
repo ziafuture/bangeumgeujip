@@ -84,7 +84,7 @@ public final class MainActivity extends Activity {
         Dialog.Ask a = Status.ask;
         StringBuilder k = new StringBuilder().append(driving()).append(wide()).append(Status.running)
                 .append('|').append(a == null ? "" : a.pair + a.first.id + (a.second == null ? "" : a.second.id))
-                .append('|').append(Status.hold).append('|').append(Status.offer).append(Status.choices).append(Status.offerWhy).append(Status.passenger).append('|').append(listView).append(allPending);
+                .append('|').append(Status.hold).append('|').append(Status.offer).append(Status.choices).append(Status.offerWhy).append(Status.passenger).append(Status.demoDriving).append('|').append(listView).append(allPending);
         if (!driving()) for (Saved.Item i : saved.all()) k.append(i.id).append(i.confirmed).append(i.alternatives.size());
         else { List<Saved.Item> all = saved.all(); k.append(all.isEmpty() ? "" : all.get(0).id); }
         return k.toString();
@@ -115,6 +115,7 @@ public final class MainActivity extends Activity {
         page.addView(parkedHome());
         page.addView(savedSection());
         page.addView(settingsSection());
+        page.addView(demoTools());
         if (BuildConfig.DEBUG) page.addView(debugTools());
         // A flick travels a third of the stock distance, so a quick swipe stops in the middle of the list.
         ScrollView s = new ScrollView(this) { @Override public void fling(int velocityY) { super.fling(velocityY / 3); } };
@@ -422,21 +423,46 @@ public final class MainActivity extends Activity {
     }
 
 
-    /** Debug builds only. Release builds have no typed input or demo switches. */
+    /**
+     * Demo mode, in every build, parked screen only: lets a reviewer try the app on an emulator with no route file
+     * and no microphone. Drives the bundled demo route inside the app and takes typed sentences on the speech path.
+     */
+    private View demoTools() {
+        LinearLayout c = card(this, SURFACE, 20);
+        c.addView(text(this, "시연 모드", BODY_L, TEXT2, true));
+        c.addView(text(this, "에뮬레이터에서 경로 파일이나 마이크 없이 해 볼 수 있어요. ① 켜기 → ② 데모 길 달리기 → ③ 가게를 지나고 1~3초 뒤 \"방금 그 카페 뭐야\" 보내기 → ④ 질문에 \"응\" 보내기",
+                BODY, TEXT3, false));
+        // Matches assets/demo_places.json along the route, so a reviewer knows when to ask.
+        c.addView(text(this, "지나는 순서: 10초 왼쪽 카페 · 16초 오른쪽 빵집 · 25초 오른쪽 국숫집 · 43초 왼쪽 카페 · 61초 오른쪽 치킨집 · 75초 오른쪽 카페",
+                BODY, TEXT3, false));
+        c.addView(text(this, Status.demoDriving ? "데모 길을 달리는 중 · 동쪽으로 43 km/h, 96초" : "장소: " + Status.source, BODY, TEXT3, false));
+        c.addView(button(this, Status.demoDriving ? "데모 길 멈추기" : "데모 길 달리기 (96초)", false, v -> {
+            if (!Status.running) { toast("먼저 켜 주세요"); return; }
+            send(new Intent(this, PassedService.class).setAction(PassedService.DEMO_DRIVE)); shownKey = "";
+        }), wrap());
+        Switch parked = new Switch(this); parked.setText("정차 중에도 듣기"); parked.setTextColor(TEXT); size(parked, BODY_L);
+        parked.setChecked(Status.listenWhileParked); parked.setOnCheckedChangeListener((v, on) -> Status.listenWhileParked = on); c.addView(parked);
+        LinearLayout quick = row(this, 8);
+        for (String q : new String[]{"방금 그 카페 뭐야", "응", "아니", "지워"}) quick.addView(button(this, q, false, v -> typed(q)), wrap());
+        c.addView(quick, fill());
+        EditText typed = new EditText(this); typed.setHint("말 대신 입력: 방금 오른쪽 빵집 뭐야"); typed.setTextColor(TEXT); typed.setHintTextColor(TEXT3); c.addView(typed, fill());
+        c.addView(button(this, "입력한 문장 보내기", false, v -> typed(typed.getText().toString())), wrap());
+        return c;
+    }
+
+    private void typed(String sentence) {
+        if (!Status.running) { toast("먼저 켜 주세요"); return; }
+        send(new Intent(this, PassedService.class).setAction(PassedService.TEXT).putExtra(PassedService.EXTRA_TEXT, sentence));
+    }
+
+    /** Debug builds only: tuning readout and layout preview. */
     private View debugTools() {
         LinearLayout c = card(this, SURFACE, 20);
         c.addView(text(this, "개발자 도구 (디버그 빌드)", BODY_L, TEXT2, true));
         c.addView(text(this, String.format(Locale.KOREA, "%s · 속도 %.0f km/h · 위치 %d건 · 장소 %s · 차량 주행상태 %s",
                 Status.service, Status.speedMps * 3.6, Status.fixes, Status.source, uxKnown ? (uxRestricted ? "주행" : "정차") : "알 수 없음"), BODY, TEXT3, false));
-        Switch parked = new Switch(this); parked.setText("정차 중에도 듣기 (시연용)"); parked.setTextColor(TEXT);
-        parked.setChecked(Status.listenWhileParked); parked.setOnCheckedChangeListener((v, on) -> Status.listenWhileParked = on); c.addView(parked);
         Switch preview = new Switch(this); preview.setText("주행 화면 미리보기"); preview.setTextColor(TEXT);
         preview.setChecked(previewDriving); preview.setOnCheckedChangeListener((v, on) -> { previewDriving = on; shownKey = ""; }); c.addView(preview);
-        EditText typed = new EditText(this); typed.setHint("말 대신 입력: 방금 그 카페 뭐야"); typed.setTextColor(TEXT); typed.setHintTextColor(TEXT3); c.addView(typed, fill());
-        c.addView(button(this, "입력한 문장 보내기", false, v -> {
-            if (!Status.running) { toast("먼저 켜 주세요"); return; }
-            send(new Intent(this, PassedService.class).setAction(PassedService.TEXT).putExtra(PassedService.EXTRA_TEXT, typed.getText().toString()));
-        }), wrap());
         return c;
     }
 
