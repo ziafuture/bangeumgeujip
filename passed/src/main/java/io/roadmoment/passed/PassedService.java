@@ -44,7 +44,8 @@ public final class PassedService extends Service implements Dialog.Out {
             TEXT = "io.roadmoment.passed.TEXT", EXTRA_TEXT = "text", WAYPOINT = "io.roadmoment.passed.WAYPOINT", EXTRA_ID = "id",
             RESET_REACTION = "io.roadmoment.passed.RESET_REACTION",
             DEST = "io.roadmoment.passed.DEST", PASSENGER = "io.roadmoment.passed.PASSENGER", ROUTE = "io.roadmoment.passed.ROUTE", // debug stand-ins for the car
-            DEMO_DRIVE = "io.roadmoment.passed.DEMO_DRIVE"; // demo mode: drive the bundled route without a GPX file
+            DEMO_DRIVE = "io.roadmoment.passed.DEMO_DRIVE", // demo mode: drive the bundled route without a GPX file
+            SAY = "io.roadmoment.passed.SAY"; // debug: speak a sentence, e.g. to record the voice for a video
     static final long MOVING_GRACE_MS = 180000; // short stops (lights, traffic) keep listening
     static final double MOVING_MPS = 2.0;
     private static final int NOTIFICATION = 21, ARRIVAL = 22;
@@ -137,6 +138,7 @@ public final class PassedService extends Service implements Dialog.Out {
                 break;
             }
             case PASSENGER: passenger(intent.getBooleanExtra(EXTRA_TEXT, false)); break;
+            case SAY: if (BuildConfig.DEBUG) say(intent.getStringExtra(EXTRA_TEXT), false); break;
             case RESET_REACTION: reaction = new Reaction(null); Status.reactionMs = reaction.peakMs(); break;
             case WAYPOINT:
                 for (Saved.Item i : saved.all()) if (i.id.equals(intent.getStringExtra(EXTRA_ID))) addStop(i);

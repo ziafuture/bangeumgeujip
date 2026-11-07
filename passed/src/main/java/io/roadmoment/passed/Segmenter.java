@@ -19,7 +19,7 @@ final class Segmenter {
     private final ArrayDeque<byte[]> lead = new ArrayDeque<>();
     private ByteArrayOutputStream speech;
     private int hot, quietBytes, lowBytes, maxBytes;
-    private long spanStart, spanEnd, lastLoud;
+    private long spanStart, spanEnd;
     private boolean manual, voiced;
     private long onset;
     /**
@@ -87,7 +87,7 @@ final class Segmenter {
             lead.addLast(pcm); if (lead.size() > 3) lead.removeFirst();
             hot = db > threshold ? hot + 1 : 0;
             if (hot >= 2) {
-                speech = new ByteArrayOutputStream(); manual = false; voiced = true; maxBytes = 8 * BYTES_PER_SEC; quietBytes = lowBytes = 0; spanStart = nowElapsed - 100; spanEnd = lastLoud = nowElapsed;
+                speech = new ByteArrayOutputStream(); manual = false; voiced = true; maxBytes = 8 * BYTES_PER_SEC; quietBytes = lowBytes = 0; spanStart = nowElapsed - 100; spanEnd = nowElapsed;
                 onset = nowElapsed - 100L * (lead.size()); // chunks are 100 ms; lead holds pre-roll
                 for (byte[] chunk : lead) speech.write(chunk, 0, chunk.length);
                 lead.clear();
@@ -95,7 +95,7 @@ final class Segmenter {
             return;
         }
         speech.write(pcm, 0, pcm.length);
-        if (db > threshold) { voiced = true; lastLoud = nowElapsed; }
+        if (db > threshold) voiced = true;
         if (db > threshold - SPAN_DB) { if (spanStart == 0) spanStart = nowElapsed; spanEnd = nowElapsed; }
         quietBytes = db <= threshold - HOLD_DB ? quietBytes + pcm.length : 0;
         lowBytes = db <= threshold ? lowBytes + pcm.length : 0;
@@ -103,7 +103,7 @@ final class Segmenter {
         boolean endOfSpeech = voiced && speech.size() > BYTES_PER_SEC / 2
                 && (quietBytes >= BYTES_PER_SEC * 8 / 10 || lowBytes >= BYTES_PER_SEC / 1000 * LOW_END_MS);
         // Cut by the long-low rule, the tail was the room, not a soft word: it must not make "응" look long.
-        if (endOfSpeech && quietBytes < BYTES_PER_SEC * 8 / 10) spanEnd = Math.min(spanEnd, lastLoud);
+        if (endOfSpeech && quietBytes < BYTES_PER_SEC * 8 / 10) spanEnd = Math.max(spanStart, Math.min(spanEnd, nowElapsed - LOW_END_MS));
         boolean nobodySpoke = manual && !voiced && speech.size() >= waitBytes;
         if (nobodySpoke) { speech = null; hot = quietBytes = lowBytes = 0; manual = false; lead.clear(); sink.silence(); return; }
         if (speech.size() >= maxBytes || endOfSpeech) {
