@@ -425,21 +425,20 @@ public final class PassedService extends Service implements Dialog.Out {
 
     // Demo mode: the same straight eastbound run as passed/demo/demo-route.gpx (43 km/h, 96 s), fed to the trail
     // in place of real fixes, so a reviewer can try the app on an emulator without loading a route file.
-    private static final double DEMO_LAT = 37.556, DEMO_LON = 126.922, DEMO_STEP_LON = 0.0001361;
-    private static final int DEMO_SECONDS = 96;
     private int demoSecond;
     private final Runnable demoTick = new Runnable() {
         @Override public void run() {
             if (!Status.demoDriving) return;
-            if (demoSecond > DEMO_SECONDS) { stopDemoDrive(); return; }
+            if (demoSecond > DemoRoute.SECONDS) { stopDemoDrive(); return; }
             long now = SystemClock.elapsedRealtime();
-            fix(DEMO_LAT, DEMO_LON + DEMO_STEP_LON * demoSecond++, now, now);
+            Status.demoSecond = demoSecond;
+            fix(DemoRoute.LAT, DemoRoute.LON + DemoRoute.STEP_LON * demoSecond++, now, now);
             main.postDelayed(this, 1000);
         }
     };
 
     private void startDemoDrive() {
-        demoSecond = 0; Status.demoDriving = true; trail.clear(); // a jump from the real position would read as a huge speed
+        demoSecond = 0; Status.demoSecond = 0; Status.demoDriving = true; trail.clear(); // a jump from the real position would read as a huge speed
         main.removeCallbacks(demoTick); main.post(demoTick);
     }
 

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -197,5 +198,27 @@ public class PassedFinderTest {
         assertFalse(Hints.echo("어 맞는 거 같아", "왼쪽 홍대쌀빵, 빵집 맞죠?"));
         assertFalse(Hints.echo("들렀다 가자", "찜한 홍대쌀빵, 근처예요. 들를까요?"));
         assertFalse(Hints.echo("방금 오른쪽 빵집 뭐야", "홍대쌀빵 찜했어요."));
+    }
+
+    /** The demo card's timeline: second, side and what a driver would ask about each bundled place. */
+    @Test public void demoRouteTimeline() {
+        java.util.List<Place> places = java.util.Arrays.asList(
+                new Place("1", "[데모] 달무리 커피", "음식점 > 카페 > 커피전문점", 37.556126, 126.923361),
+                new Place("2", "[데모] 소금결 베이커리", "음식점 > 간식 > 제과,베이커리", 37.555883, 126.924150),
+                new Place("3", "[데모] 오늘의 국수", "음식점 > 한식 > 국수", 37.555865, 126.925403));
+        java.util.List<DemoRoute.Stop> stops = DemoRoute.stops(places);
+        assertEquals(3, stops.size());
+        assertEquals(10, stops.get(0).second);
+        assertEquals("방금 왼쪽 카페 뭐야", stops.get(0).question());
+        assertEquals("방금 오른쪽 빵집 뭐야", stops.get(1).question());
+        assertEquals("방금 오른쪽 국숫집 뭐야", stops.get(2).question());
+        assertNull(DemoRoute.passed(stops, 9));
+        assertEquals("[데모] 달무리 커피", DemoRoute.passed(stops, 12).name);
+        assertEquals("[데모] 소금결 베이커리", DemoRoute.passed(stops, 17).name); // the later of two recent ones
+        assertNull(DemoRoute.passed(stops, 40));
+        assertEquals(25, DemoRoute.next(stops, 17).second);
+        assertNull(DemoRoute.next(stops, 25));
+        // Each question finds the right kind and side.
+        assertTrue(Hints.parse(stops.get(2).question()).request);
     }
 }

@@ -23,6 +23,8 @@ final class DemoPlaces implements PlaceSource {
         } catch (Exception e) { throw new IllegalStateException("demo_places.json", e); }
     }
 
+    List<Place> all() { return all; }
+
     @Override public String label() { return "데모 장소(가상)"; }
 
     @Override public void nearby(double lat, double lon, int radiusM, Hints hints, Callback cb) {

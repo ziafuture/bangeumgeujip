@@ -39,6 +39,8 @@ public final class MainActivity extends Activity {
     private boolean allPending;
     private Car car;
     private volatile boolean uxKnown, uxRestricted;
+    private List<DemoRoute.Stop> demoStops;
+    private TextView demoNow, demoPassed, demoNext, demoAsk; private ProgressBar demoBar; // live demo progress
     private static boolean previewDriving; // debug: show the driving layout while parked
 
     private final Runnable refresh = new Runnable() {
@@ -46,6 +48,7 @@ public final class MainActivity extends Activity {
             String key = screenKey();
             if (!key.equals(shownKey)) { shownKey = key; build(); }
             if (statusPill != null) updatePill(statusPill);
+            updateDemo();
             handler.postDelayed(this, 300);
         }
     };
@@ -92,6 +95,7 @@ public final class MainActivity extends Activity {
 
     private void build() {
         int y = scroll == null ? 0 : scroll.getScrollY();
+        demoNow = demoPassed = demoNext = demoAsk = null; demoBar = null;
         frame.removeAllViews();
         scroll = null;
         int pad = dp(this, wide() ? 32 : 20);
@@ -430,12 +434,18 @@ public final class MainActivity extends Activity {
     private View demoTools() {
         LinearLayout c = card(this, SURFACE, 20);
         c.addView(text(this, "시연 모드", BODY_L, TEXT2, true));
-        c.addView(text(this, "에뮬레이터에서 경로 파일이나 마이크 없이 해 볼 수 있어요. ① 켜기 → ② 데모 길 달리기 → ③ 가게를 지나고 1~3초 뒤 \"방금 그 카페 뭐야\" 보내기 → ④ 질문에 \"응\" 보내기",
+        c.addView(text(this, "에뮬레이터에서 경로 파일이나 마이크 없이 해 볼 수 있어요. ① 켜기 → ② 데모 길 달리기 → ③ \"방금 지나감\"이 뜨면 \"방금 … 뭐야\" 버튼 누르기(방금 지난 가게로 바뀌어요) → ④ 질문에 \"맞아요\" 또는 \"응\"",
                 BODY, TEXT3, false));
         // Matches assets/demo_places.json along the route, so a reviewer knows when to ask.
         c.addView(text(this, "지나는 순서: 10초 왼쪽 카페 · 16초 오른쪽 빵집 · 25초 오른쪽 국숫집 · 43초 왼쪽 카페 · 61초 오른쪽 치킨집 · 75초 오른쪽 카페",
                 BODY, TEXT3, false));
-        c.addView(text(this, Status.demoDriving ? "데모 길을 달리는 중 · 동쪽으로 43 km/h, 96초" : "장소: " + Status.source, BODY, TEXT3, false));
+        if (Status.demoDriving) { // live progress, updated in place every tick so typing below is not lost
+            demoNow = text(this, "", BODY_L, TEXT, true); c.addView(demoNow);
+            demoBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); demoBar.setMax(DemoRoute.SECONDS);
+            demoBar.setProgressTintList(android.content.res.ColorStateList.valueOf(ACCENT)); c.addView(demoBar, fill());
+            demoPassed = text(this, "", BODY_L, ACCENT, true); c.addView(demoPassed);
+            demoNext = text(this, "", BODY, TEXT3, false); c.addView(demoNext);
+        } else c.addView(text(this, "장소: " + Status.source, BODY, TEXT3, false));
         c.addView(button(this, Status.demoDriving ? "데모 길 멈추기" : "데모 길 달리기 (96초)", false, v -> {
             if (!Status.running) { toast("먼저 켜 주세요"); return; }
             send(new Intent(this, PassedService.class).setAction(PassedService.DEMO_DRIVE)); shownKey = "";
@@ -443,12 +453,37 @@ public final class MainActivity extends Activity {
         Switch parked = new Switch(this); parked.setText("정차 중에도 듣기"); parked.setTextColor(TEXT); size(parked, BODY_L);
         parked.setChecked(Status.listenWhileParked); parked.setOnCheckedChangeListener((v, on) -> Status.listenWhileParked = on); c.addView(parked);
         LinearLayout quick = row(this, 8);
-        for (String q : new String[]{"방금 그 카페 뭐야", "응", "아니", "지워"}) quick.addView(button(this, q, false, v -> typed(q)), wrap());
+        demoAsk = button(this, "방금 그 카페 뭐야", false, v -> typed(((TextView) v).getText().toString())); // follows the shop just passed
+        quick.addView(demoAsk, wrap());
+        for (String q : new String[]{"응", "아니", "지워"}) quick.addView(button(this, q, false, v -> typed(q)), wrap());
         c.addView(quick, fill());
         EditText typed = new EditText(this); typed.setHint("말 대신 입력: 방금 오른쪽 빵집 뭐야"); typed.setTextColor(TEXT); typed.setHintTextColor(TEXT3); c.addView(typed, fill());
         c.addView(button(this, "입력한 문장 보내기", false, v -> typed(typed.getText().toString())), wrap());
+        updateDemo();
         return c;
     }
+
+    private List<DemoRoute.Stop> demoStops() {
+        if (demoStops == null) {
+            try { demoStops = DemoRoute.stops(new DemoPlaces(this).all()); } catch (RuntimeException e) { demoStops = new ArrayList<>(); }
+        }
+        return demoStops;
+    }
+
+    /** "데모 길 12초 / 96초", what was just passed and what comes next, so a reviewer knows when and what to ask. */
+    private void updateDemo() {
+        if (demoNow == null || !Status.demoDriving) return;
+        int sec = Status.demoSecond; List<DemoRoute.Stop> stops = demoStops();
+        DemoRoute.Stop p = DemoRoute.passed(stops, sec), n = DemoRoute.next(stops, sec);
+        show(demoNow, "데모 길 " + sec + "초 / " + DemoRoute.SECONDS + "초 · 동쪽으로 43 km/h");
+        demoBar.setProgress(sec);
+        show(demoPassed, p == null ? "방금 지나간 가게 없음 · 다음 가게를 기다려 주세요"
+                : "방금 지나감: " + p.side() + " " + p.word + " · " + p.name + " (" + (sec - p.second) + "초 전) → 지금 물어보세요");
+        show(demoNext, n == null ? "마지막 가게를 지났어요" : "다음: " + n.side() + " " + n.word + " (" + (n.second - sec) + "초 뒤)");
+        if (demoAsk != null) show(demoAsk, p != null ? p.question() : "방금 그 카페 뭐야");
+    }
+
+    private static void show(TextView v, String s) { if (!s.contentEquals(v.getText())) v.setText(s); }
 
     private void typed(String sentence) {
         if (!Status.running) { toast("먼저 켜 주세요"); return; }
