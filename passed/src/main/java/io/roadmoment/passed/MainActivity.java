@@ -490,6 +490,8 @@ public final class MainActivity extends Activity {
             send(new Intent(this, PassedService.class).setAction(PassedService.DEST).putExtra(PassedService.EXTRA_TEXT, intent.getStringExtra("dest")));
         if (intent.hasExtra("route") && Status.running)
             send(new Intent(this, PassedService.class).setAction(PassedService.ROUTE).putExtra(PassedService.EXTRA_TEXT, intent.getStringExtra("route")));
+        if (intent.getBooleanExtra("cancelroute", false) && Status.running)
+            send(new Intent(this, PassedService.class).setAction(PassedService.CANCEL_ROUTE));
         if (intent.hasExtra("say") && Status.running)
             send(new Intent(this, PassedService.class).setAction(PassedService.SAY).putExtra(PassedService.EXTRA_TEXT, intent.getStringExtra("say")));
         if (intent.hasExtra("passenger") && Status.running)
