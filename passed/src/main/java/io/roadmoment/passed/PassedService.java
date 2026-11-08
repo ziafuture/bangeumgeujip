@@ -179,6 +179,8 @@ public final class PassedService extends Service implements Dialog.Out {
         Hints hints = Hints.parse(text);
         // A fresh "방금…" request wins over a pending "들를까요?" offer: the shop just passed matters more.
         if (offered != null && !(hints.request && Hints.answer(text) != Hints.Answer.YES && !Chat.go(text))) {
+            // A garbled reply ("그 을에") keeps the offer open until the answer window closes; only a no or silence declines.
+            if (Hints.answer(text) == Hints.Answer.NONE && !Chat.go(text)) { Status.heard = text; return; }
             Saved.Item item = offered; offered = null; ++answerToken;
             if (accepts(text)) addStop(item); else Earcon.close(); // declining needs no words
             Status.heard = text; return;

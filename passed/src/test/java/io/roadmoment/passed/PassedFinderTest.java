@@ -127,6 +127,8 @@ public class PassedFinderTest {
             assertEquals(no, Hints.Answer.NO, Hints.answer(no));
         assertEquals(Hints.Answer.NONE, Hints.answer("노래 틀어 줘"));
         assertEquals(Hints.Answer.YES, Hints.answer("응"));
+        assertEquals(Hints.Answer.YES, Hints.answer("으응"));
+        assertEquals(Hints.Answer.NONE, Hints.answer("그 을에"));
         assertEquals(Hints.Answer.LATER, Hints.answer("아니 나중 거"));      // order words still win
         assertEquals(Hints.Answer.CANCEL, Hints.answer("아니 됐어"));
     }

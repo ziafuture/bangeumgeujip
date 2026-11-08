@@ -194,7 +194,7 @@ public final class Hints {
                 "아이다", "아인데", "아이라", "아이요", "아입니", "아이거든") || c.equals("노") || c.endsWith("아이고")) return Answer.NO; // 경상 "아이다"
         if (c.equals("응") || c.startsWith("응응") || c.startsWith("응맞") || c.startsWith("응그") || c.equals("어") || c.startsWith("어맞")
                 || c.startsWith("네") || c.startsWith("넵") || c.equals("예") || c.startsWith("예맞") || c.startsWith("예예") || c.equals("예게")
-                || c.equals("잉") || c.equals("웅") || c.equals("엉") || c.startsWith("어어") || c.startsWith("하모") || c.equals("기여")
+                || c.equals("잉") || c.equals("웅") || c.equals("엉") || c.startsWith("어어") || c.startsWith("으응") || c.startsWith("하모") || c.equals("기여")
                 || has(c, "맞아", "맞죠", "맞어", "맞다", "맞심", "맞습", "맞당", "맞제", "맞지", "맞는", "맞네", "그래", "그려", "그류",
                         "그라제", "그라자", "그렇지", "그렇제", "좋아", "저장해", "찜해")) return Answer.YES; // + 경상 하모, 충청 그려, 제주 기여
         if (c.startsWith("응") && c.length() <= 3) return Answer.YES;
