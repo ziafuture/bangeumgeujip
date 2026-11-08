@@ -92,6 +92,24 @@ public final class Hints {
     /** Says which place: a side, a kind or a sign colour. */
     boolean specific() { return side != Side.ANY || !kinds.isEmpty() || color != null; }
 
+    /**
+     * The app's own voice heard back through the mic ("[데모] 달무리 커피 찜했어요." as "대모다부리 커피 찜했어요"): the
+     * emulator plays it on the host speaker next to the host mic, and a car without echo cancelling could do the same.
+     * Character-pair overlap (Dice) of at least half; short replies like "응" never count.
+     */
+    static boolean echo(String heard, String said) {
+        String h = compact(heard), s = compact(said);
+        if (h.length() < 4 || s.length() < 4) return false;
+        java.util.Map<String, Integer> pairs = new java.util.HashMap<>();
+        for (int i = 0; i + 1 < s.length(); i++) pairs.merge(s.substring(i, i + 2), 1, Integer::sum);
+        int common = 0;
+        for (int i = 0; i + 1 < h.length(); i++) {
+            Integer n = pairs.get(h.substring(i, i + 2));
+            if (n != null && n > 0) { common++; pairs.put(h.substring(i, i + 2), n - 1); }
+        }
+        return 2.0 * common / (h.length() - 1 + s.length() - 1) >= 0.5;
+    }
+
     static String compact(String text) { return text == null ? "" : text.replaceAll("[\\s\\p{Punct}]", ""); }
 
     public static Hints parse(String text) {

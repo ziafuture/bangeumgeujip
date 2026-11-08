@@ -47,6 +47,7 @@ public final class PassedService extends Service implements Dialog.Out {
             DEMO_DRIVE = "io.roadmoment.passed.DEMO_DRIVE", // demo mode: drive the bundled route without a GPX file
             SAY = "io.roadmoment.passed.SAY", // debug: speak a sentence, e.g. to record the voice for a video
             CANCEL_ROUTE = "io.roadmoment.passed.CANCEL_ROUTE"; // debug: end the navigation route between video takes
+    static final long ECHO_MS = 6000; // our own voice coming back through the mic arrives within a few seconds
     static final long MOVING_GRACE_MS = 180000; // short stops (lights, traffic) keep listening
     static final double MOVING_MPS = 2.0;
     private static final int NOTIFICATION = 21, ARRIVAL = 22;
@@ -163,6 +164,10 @@ public final class PassedService extends Service implements Dialog.Out {
     private void heard(String raw, long rawOnset, int voicedMs) { main.post(() -> {
         if (raw == null || raw.trim().isEmpty()) return;
         if (BuildConfig.DEBUG) android.util.Log.d("BangeumHeard", raw + " (" + voicedMs + "ms, threshold " + Math.round(segmenter.thresholdDb()) + " dB, now " + Math.round(Status.db) + " dB)"); // tuning aid; release builds never log speech
+        if (voicedMs > 0 && SystemClock.elapsedRealtime() - lastSpokeAt < ECHO_MS && Hints.echo(raw, Status.lastSaid)) {
+            if (BuildConfig.DEBUG) android.util.Log.d("BangeumHeard", "echo, ignored");
+            return;
+        }
         String text = raw; long onset = rawOnset;
         if (held != null && rawOnset - heldEnd < JOIN_GAP_MS) {
             text = held + " " + raw; onset = heldOnset;

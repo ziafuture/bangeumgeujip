@@ -188,4 +188,14 @@ public class PassedFinderTest {
         // Without a colour in the request, known colours change nothing.
         assertEquals("꽃살집", PassedFinder.rank(t, 20000, ps, Hints.parse("방금 음식점 뭐야"), 2500, signs).get(0).place.name);
     }
+
+    /** The emulator's speaker feeds the mic: our own sentence must not count as the driver's answer. */
+    @Test public void recognisesOurOwnVoiceComingBack() {
+        assertTrue(Hints.echo("대모다부리 커피 찜했어요", "[데모] 달무리 커피 찜했어요."));
+        assertTrue(Hints.echo("왼쪽 대모 달무리 커피 카페 맞죠", "왼쪽 [데모] 달무리 커피, 카페 맞죠?"));
+        assertFalse(Hints.echo("응", "왼쪽 [데모] 달무리 커피, 카페 맞죠?"));
+        assertFalse(Hints.echo("어 맞는 거 같아", "왼쪽 홍대쌀빵, 빵집 맞죠?"));
+        assertFalse(Hints.echo("들렀다 가자", "찜한 홍대쌀빵, 근처예요. 들를까요?"));
+        assertFalse(Hints.echo("방금 오른쪽 빵집 뭐야", "홍대쌀빵 찜했어요."));
+    }
 }
