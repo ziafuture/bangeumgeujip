@@ -392,7 +392,7 @@ public final class MainActivity extends Activity {
             send(new Intent(this, PassedService.class).setAction(PassedService.WAYPOINT).putExtra(PassedService.EXTRA_ID, i.id));
         }));
         if (!i.phone.isEmpty()) actions.addView(button(this, "전화", false, v -> open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + i.phone)))));
-        if (!i.url.isEmpty()) actions.addView(button(this, "영업시간·리뷰", false, v -> open(new Intent(Intent.ACTION_VIEW, Uri.parse(i.url)))));
+        if (!i.url.isEmpty()) actions.addView(button(this, "영업시간·리뷰", false, v -> page(i.url)));
         actions.addView(button(this, "삭제", false, v -> { saved.remove(i.id); shownKey = ""; }));
         card.addView(actions, wrap());
         return card;
@@ -579,6 +579,24 @@ public final class MainActivity extends Activity {
     }
 
     private void open(Intent i) { try { startActivity(i); } catch (Exception e) { toast("열 수 없어요"); } }
+    /** Kakao's place page (hours, reviews, photos) inside the app: the car has no browser to hand the link to. */
+    private void page(String url) {
+        android.app.Dialog d = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen);
+        android.webkit.WebView web = new android.webkit.WebView(this);
+        web.getSettings().setJavaScriptEnabled(true);
+        web.getSettings().setDomStorageEnabled(true);
+        web.setWebViewClient(new android.webkit.WebViewClient());
+        web.loadUrl(url.replaceFirst("^http:", "https:"));
+        LinearLayout box = column(this, 0);
+        box.setBackgroundColor(BG);
+        TextView close = button(this, "닫기", true, v -> d.dismiss());
+        LinearLayout.LayoutParams lp = wrap(); lp.gravity = Gravity.END; lp.setMargins(0, dp(this, 12), dp(this, 24), dp(this, 12));
+        box.addView(close, lp);
+        box.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        d.setContentView(box);
+        d.setOnDismissListener(x -> web.destroy());
+        d.show();
+    }
     private void send(Intent i) { try { startService(i); } catch (Exception e) { toast(e.getMessage()); } }
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
 
