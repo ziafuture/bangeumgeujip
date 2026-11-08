@@ -16,6 +16,13 @@ def glyph(d, x0, y0, u, hole):
     d.ellipse((x0 + (cx - ro) * u, y0 + (cy - ro) * u, x0 + (cx + ro) * u, y0 + (cy + ro) * u), fill=INK)
     d.ellipse((x0 + (cx - ri) * u, y0 + (cy - ri) * u, x0 + (cx + ri) * u, y0 + (cy + ri) * u), fill=hole)
 
+def small_geum(d, x0, y0, u):
+    """금 in a 100x100 box: ㄱ, ㅡ, ㅁ."""
+    R = lambda a, b, c, e: d.rounded_rectangle((x0 + a * u, y0 + b * u, x0 + c * u, y0 + e * u), 3 * u, fill=INK)
+    R(12, 0, 88, 14); R(74, 0, 88, 34)                                             # ㄱ
+    R(0, 42, 100, 56)                                                               # ㅡ
+    R(14, 64, 86, 78); R(14, 64, 28, 100); R(72, 64, 86, 100); R(14, 86, 86, 100)   # ㅁ
+
 def render(size_px, full):
     """full: the legacy 48dp icon (rounded square); else the 108dp adaptive foreground (glyph only)."""
     k = 4; S = size_px * k; im = Image.new('RGBA', (S, S), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
@@ -23,7 +30,9 @@ def render(size_px, full):
         m = S * 0.04; d.rounded_rectangle((m, m, S - m, S - m), S * 0.22, fill=ORANGE); box = S * 0.56
     else:
         box = S * 0.40                                                              # inside the 66dp safe circle
-    u = box / 100; glyph(d, (S - box) / 2 + 1 * u, (S - box) / 2, u, ORANGE if full else (0, 0, 0, 0))
+    u = box / 100; x0, y0 = (S - box) / 2, (S - box) / 2
+    glyph(d, x0 - 6 * u, y0 - 2 * u, u * 0.86, ORANGE if full else (0, 0, 0, 0))   # 방, nudged up-left
+    small_geum(d, x0 + 71 * u, y0 + 62 * u, u * 0.33)                              # 금, small at the lower right
     return im.resize((size_px, size_px), Image.LANCZOS)
 
 for name, scale in DENSITY.items():
