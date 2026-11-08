@@ -140,7 +140,7 @@ public final class PassedService extends Service implements Dialog.Out {
             }
             case PASSENGER: passenger(intent.getBooleanExtra(EXTRA_TEXT, false)); break;
             case SAY: if (BuildConfig.DEBUG) say(intent.getStringExtra(EXTRA_TEXT), false); break;
-            case CANCEL_ROUTE: if (BuildConfig.DEBUG && navi != null && naviReady) navi.cancelRoute(); break;
+            case CANCEL_ROUTE: if (BuildConfig.DEBUG && navi != null && naviReady) { navi.removeWaypoint(WaypointIndex.ALL); main.postDelayed(navi::cancelRoute, 1500); } break;
             case RESET_REACTION: reaction = new Reaction(null); Status.reactionMs = reaction.peakMs(); break;
             case WAYPOINT:
                 for (Saved.Item i : saved.all()) if (i.id.equals(intent.getStringExtra(EXTRA_ID))) addStop(i);
