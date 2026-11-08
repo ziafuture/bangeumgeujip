@@ -46,6 +46,9 @@ final class Ui {
         v.setText(s); size(v, sp); v.setTextColor(color);
         v.setLineSpacing(0, 1.25f);
         if (bold) v.setTypeface(Typeface.DEFAULT_BOLD);
+        // Wrap Korean at word boundaries, so a long shop name never splits "2호" into "2 / 호".
+        if (android.os.Build.VERSION.SDK_INT >= 33)
+            v.setLineBreakWordStyle(android.graphics.text.LineBreakConfig.LINE_BREAK_WORD_STYLE_PHRASE);
         return v;
     }
 

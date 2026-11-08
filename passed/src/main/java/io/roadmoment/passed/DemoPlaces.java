@@ -12,7 +12,13 @@ final class DemoPlaces implements PlaceSource {
     private final List<Place> all = new ArrayList<>();
 
     DemoPlaces(Context context) {
-        try (InputStream in = context.getAssets().open("demo_places.json")) {
+        try { load(context, "demo_places.json"); } catch (Exception e) { throw new IllegalStateException("demo_places.json", e); }
+        // Debug builds only (src/debug/assets): extra fictional places for filming, e.g. the short-form video's shop.
+        try { load(context, "demo_places_extra.json"); } catch (java.io.FileNotFoundException absent) { } catch (Exception e) { throw new IllegalStateException("demo_places_extra.json", e); }
+    }
+
+    private void load(Context context, String asset) throws Exception {
+        try (InputStream in = context.getAssets().open(asset)) {
             java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream(); byte[] b = new byte[8192]; int n;
             while ((n = in.read(b)) != -1) buf.write(b, 0, n);
             JSONArray a = new JSONArray(buf.toString("UTF-8"));
@@ -20,7 +26,7 @@ final class DemoPlaces implements PlaceSource {
                 JSONObject o = a.getJSONObject(i);
                 all.add(new Place(o.getString("id"), o.getString("name"), o.getString("category"), o.getDouble("lat"), o.getDouble("lon"), ""));
             }
-        } catch (Exception e) { throw new IllegalStateException("demo_places.json", e); }
+        }
     }
 
     List<Place> all() { return all; }
