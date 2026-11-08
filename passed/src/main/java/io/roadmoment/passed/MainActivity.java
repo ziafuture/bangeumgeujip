@@ -35,6 +35,7 @@ public final class MainActivity extends Activity {
     private Saved saved;
     private String shownKey = "";
     private ScrollView scroll; // parked page, kept so a rebuild does not jump back to the top
+    private int listY; // its scroll position, kept while a question or offer screen is shown
     private String listView = "recent"; // saved list: "recent", "kind" or "area"
     private boolean allPending;
     private Car car;
@@ -94,7 +95,8 @@ public final class MainActivity extends Activity {
     }
 
     private void build() {
-        int y = scroll == null ? 0 : scroll.getScrollY();
+        boolean back = scroll == null; // coming back from a question, an offer or the driving screen
+        if (scroll != null) listY = scroll.getScrollY();
         demoNow = demoPassed = demoNext = demoAsk = null; demoBar = null;
         frame.removeAllViews();
         scroll = null;
@@ -119,12 +121,14 @@ public final class MainActivity extends Activity {
         page.addView(parkedHome());
         page.addView(savedSection());
         page.addView(settingsSection());
-        page.addView(demoTools());
+        View demo = demoTools(); page.addView(demo);
         if (BuildConfig.DEBUG) page.addView(debugTools());
         // A flick travels a third of the stock distance, so a quick swipe stops in the middle of the list.
         ScrollView s = new ScrollView(this) { @Override public void fling(int velocityY) { super.fling(velocityY / 3); } };
         s.addView(page); frame.addView(s);
-        s.post(() -> s.scrollTo(0, y)); scroll = s;
+        // Back from a question during the demo drive: straight to the demo card, ready for the next shop.
+        final int y = listY;
+        s.post(() -> s.scrollTo(0, back && Status.demoDriving ? Math.max(0, demo.getTop() - dp(this, 24)) : y)); scroll = s;
     }
 
     // ---- shared pieces -------------------------------------------------------------------
