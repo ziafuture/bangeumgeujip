@@ -393,7 +393,7 @@ public final class MainActivity extends Activity {
         info.addView(text(this, i.name + (i.confirmed ? "" : " (미확인)"), H2, TEXT, true));
         String area = Brief.area(i.address);
         info.addView(text(this, join(Saved.label(i), area, ago(i.savedAt)), BODY, TEXT2, false));
-        card.addView(info, wide() ? weight(1) : fill());
+        card.addView(info, wide() ? grow() : fill());
         LinearLayout actions = row(this, 8);
         actions.addView(button(this, "길 안내", true, v -> {
             if (!Status.running) { toast("먼저 켜 주세요"); return; }
